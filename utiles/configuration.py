@@ -11,9 +11,7 @@ class ConfigurationFile(object):
                                    "EXIGENCIA" : '0.6',
                                    "CLUSTERS" : '3'
                                    })
-        config.read(str_config)  
-        modelname = modelname.upper()
-        #print(str_config, config.sections())   
+        config.read(str_config)   
         self.items = config[modelname].getint("ITEMS")
         self.escala = config[modelname].getint("ESCALA")    
         self.observaciones = config[modelname].getint("OBSERVACIONES")        
@@ -25,5 +23,8 @@ class ConfigurationFile(object):
         self.puntaje_maximo = self.escala*self.items
         self.puntaje_corte = round(self.exigencia*self.puntaje_maximo)
 
-    def __getattribute__(self, __name: str):
-        return object.__getattribute__(self, __name)
+    def __getattr__(self, name: str):
+        return object.__getattribute__(name)
+    
+    def __setattr__(self, name: str, value):
+        self.__dict__[name] = value
