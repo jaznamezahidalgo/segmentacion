@@ -1,3 +1,6 @@
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
 class Data(object):
   def __init__(self, data, column, limit):
       self.data = data
