@@ -14,7 +14,7 @@ if __name__ == '__main__' :
     parser.add_argument("-config", type = str, help = "<str> configuration file", required = True)
     parser.add_argument("-name", type=str, help=" name of section in the configuration file", required = False, default="CONFIG")
     parser.add_argument("-mode", type=str, choices=['generate', 'load'],  help=" generate or run", required = False, default = 'generate')
-    parser.add_argument("-file", type=str, choices=['generate', 'load'],  help=" generate or run", required = False, default = 'data/Simulated_data.csv')    
+    parser.add_argument("-file", type=str, choices=['generate', 'load'],  help=" generate or run", required = False, default = 'Simulated_data.csv')    
     pargs = parser.parse_args()  
 
     configurationFile = ConfigurationFile(pargs.config, pargs.name)   
