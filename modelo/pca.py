@@ -1,3 +1,7 @@
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+
 class PCA_Work(object):
   def __init__(self, features_scaled):
       self.X_features_scaled = features_scaled
