@@ -35,7 +35,8 @@ class SegmentationResult(object):
     ax.set_xlabel("Grupo", fontsize=16)
     ax.set_ylabel(column.capitalize(), fontsize=16)
     plt.ylim(min(self.data_final[column])-1, max(self.data_final[column])+1)
-    ax.set_title("Dispersión de " + column + " por grupo", fontsize=24, fontweight = "bold");
+    ax.set_title("Dispersión de " + column + " por grupo", fontsize=24, fontweight = "bold")
+    plt.show();
 
   def to_csv(self, unique_file = False, output = 'result.csv'):
     if unique_file:

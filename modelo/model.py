@@ -1,18 +1,18 @@
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt 
 class SegmentationModel(object):
-  def __init__(self, X, x_clusters, n_pca, x_iterations = 1000, name = "KMeans"):
-    self.X = X
+  def __init__(self, work_pca, x_clusters, x_iterations = 1000, name = "KMeans", num_pca = None):
+    self.X = work_pca.PCA_components
     
     self.n_clusters = x_clusters
-    self.num_pca = n_pca
+    self.num_pca = work_pca.num_pca if num_pca is None else num_pca
     self.max_iter = x_iterations
     self.dict_summary = {}
     self.name = name
     # Crea el modelo
     self.model = KMeans(n_clusters = self.n_clusters, max_iter = self.max_iter, 
                            random_state=29, init='random',
-                       algorithm = 'auto').fit(X=X.iloc[:,:self.num_pca])
+                       algorithm = 'auto').fit(X=self.X.iloc[:,:self.num_pca])
     self.y_predict = self.model.predict(self.X.iloc[:,:self.num_pca])
 
     self.dict_summary[name] = {}
@@ -31,7 +31,8 @@ class SegmentationModel(object):
         marker    = 'o',
         edgecolor = 'black'
     )
-    ax.set_title('KMeans K={0}, PCA={1}'.format(self.n_clusters, self.num_pca), fontsize=20, fontweight="bold");
+    ax.set_title('KMeans K={0}, PCA={1}'.format(self.n_clusters, self.num_pca), fontsize=20, fontweight="bold")
+    plt.show();
 
   def __getattr__(self, name: str):
       return object.__getattribute__(name)

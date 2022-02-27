@@ -2,11 +2,17 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 
+import pandas as pd
+
 class PCA_Work(object):
   def __init__(self, features_scaled):
       self.X_features_scaled = features_scaled
       self.num_pca = 1      
-
+      pca = PCA()
+      principal_components = pca.fit_transform(self.X_features_scaled)    
+      # Putting components in a dataframe for later
+      self.PCA_components = pd.DataFrame(principal_components)
+  
   def __getattr__(self, name: str):
       return object.__getattribute__(name)
 
@@ -23,9 +29,7 @@ class PCA_Work(object):
     plt.ylabel('Varianza %')
     plt.xticks(PC)
     plt.title("Varianza utilizando varios componentes", fontsize=18, fontweight="bold")
-
-    # Putting components in a dataframe for later
-    self.PCA_components = pd.DataFrame(principal_components)    
+    plt.show()
 
   def cluster_by_PCA(self, max_clusters = 10, max_iter = 1000, 
                      kmeans_init = None):

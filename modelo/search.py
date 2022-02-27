@@ -1,12 +1,22 @@
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from sklearn.metrics import silhouette_score
+
+import numpy as np
+import pandas as pd
+
 class SearchOptimusK(object):
-  def __init__(self, num_pca, PCA_components, max_clusters = 10, 
+  def __init__(self, work_pca, max_clusters = 10, 
                max_iter = 1000, algorithm = None, kmeans_init = None):
-      self.num_pca = num_pca
-      self.PCA_components = PCA_components
+      self.num_pca = work_pca.num_pca
+      self.PCA_components = work_pca.PCA_components
       self.max_clusters = max_clusters
       self.max_iter = max_iter
       self.algorithm = "auto" if algorithm is None else algorithm
-      self.kmeans_init= "k-means++" if kmeans_init is None else kmeans_init      
+      self.kmeans_init = "k-means++" if kmeans_init is None else kmeans_init      
+      self.elbow = 2
+      self.silhoutte = 2
+      self.GAP = 2
 
   def __getattr__(self, name: str):
       return object.__getattribute__(name)
@@ -65,7 +75,8 @@ class SearchOptimusK(object):
     ax.plot(self.range_n_clusters, self.valores_medios_silhouette, marker='o')
     ax.set_title("Evolución de media de los índices silhouette con {}".format(self.algorithm), fontsize=18, fontweight="bold")
     ax.set_xlabel('Número clusters', fontsize=14)
-    ax.set_ylabel('Media índices silhouette', fontsize=14);
+    ax.set_ylabel('Media índices silhouette', fontsize=14)
+    plt.show();
 
   def get_cluster_GAP(self, nrefs=3, maxClusters=10):
     """
@@ -92,7 +103,7 @@ class SearchOptimusK(object):
         refDisp = km.inertia_
         refDisps[i] = refDisp
         # Fit cluster to original data and create dispersion
-        km = KMeans(k)
+        km = KMeans(k, init = self.kmeans_init, max_iter = self.max_iter, random_state=29)
         km.fit(data)
         
         origDisp = km.inertia_
@@ -101,5 +112,20 @@ class SearchOptimusK(object):
         # Assign this loop's gap statistic to gaps
         gaps[gap_index] = gap
         
-        resultsdf = resultsdf.append({'clusterCount':k, 'gap':gap}, ignore_index=True)
-    return (gaps.argmax() + 1, resultsdf, resultsdf.clusterCount[gaps.argmax()])
+        #resultsdf = resultsdf.append({'clusterCount':k, 'gap':gap}, ignore_index=True)
+        x_df = pd.DataFrame([[k, gap]], columns=['clusterCount', 'gap'])
+        resultsdf = pd.concat([resultsdf, x_df], ignore_index=True)
+    self.resultsdf = resultsdf
+    self.GAP = self.resultsdf.clusterCount[gaps.argmax()]
+    return (gaps.argmax() + 1, self.resultsdf, self.resultsdf.clusterCount[gaps.argmax()])
+
+  def view_result_GAP(self):
+    plt.plot(self.resultsdf['clusterCount'], self.resultsdf['gap'], linestyle='--', marker='o', color='b');
+    plt.xlabel('K', fontsize=18);
+    plt.ylabel('Estadístico GAP', fontsize=16);
+    plt.title('Estadístico GAP versus K', fontsize=25, fontweight="bold")
+    plt.show();
+
+  def __str__(self) -> str:
+    return "elbow : {0}; silhoutte : {1}; GAP : {2}\n NUM_COMPONENTES : {3}".format(self.elbow, 
+    self.silhoutte, self.GAP, self.num_pca)
