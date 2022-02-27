@@ -30,3 +30,7 @@
 ## Configuración
 
 + El archivo model.config contiene los parámetros de cofiguracion
+
+## Prueba desde la terminal (ejemplo)
+
+$ python3 main.py -config=config/model.config -mode=load -file=data/Simulated_data_bad.csv
