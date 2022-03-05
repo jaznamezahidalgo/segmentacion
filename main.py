@@ -11,13 +11,14 @@ sys.path.append(str(pathlib.Path().absolute()))
 from utiles.configuration import ConfigurationFile
 from utiles.generate import Generate
 from utiles.data import Data
-from utiles.calculos import evaluate_with_silhoutte, display_variants
+from utiles.calculos import evaluate_with_silhoutte, display_variants, generate_descarted
 from modelo.search import SearchOptimusK
 from modelo.model import SegmentationModel
 from modelo.result import SegmentationResult
 
 import pandas as pd
 import numpy as np
+import random
 import argparse
 import os
 
@@ -25,7 +26,7 @@ if __name__ == '__main__' :
     parser = argparse.ArgumentParser(description = "Clustering model")
     parser.add_argument("-config", type = str, help = "<str> configuration file", required = True)
     parser.add_argument("-name", type=str, help=" name of section in the configuration file", required = False, default="CONFIG")
-    parser.add_argument("-mode", type=str, choices=['generate', 'load'],  help=" generate or run", required = False, default = 'generate')
+    parser.add_argument("-mode", type=str, choices=['generate', 'load', 'descarted'],  help=" generate or load or descarted", required = False, default = 'generate')
     parser.add_argument("-file", type=str,  help="name of file", required = False, default = 'Simulated_data.csv')    
     pargs = parser.parse_args()  
 
@@ -49,13 +50,25 @@ if __name__ == '__main__' :
         data_generate = Generate(configurationFile,file_output=output_file)
         data_generate.calculate_save_from_random()
         print("Datos generados en el archivo {}".format(output_file))
+
+    if pargs.mode == 'descarted':
+        input_file = pargs.file
+        print("Carga de datos desde {} ...".format(input_file))
+        data_load = Data(configurationFile, input_file, sep=",")
+        output_file = "Descartados_" + str(random.randrange(100)) + ".csv"
+        total, descartados, data_other_model = generate_descarted(data_load.data_frame, 
+                        out_file = output_file)
+        print(data_other_model)
+        
+        print("{0} registros descartados de un total de {1} registos en el archivo {2}".format(descartados, total, output_file))        
+
     if pargs.mode == 'load':   
         input_file = pargs.file
         print("Carga de datos desde {} ...".format(input_file))
         data_load = Data(configurationFile, input_file, sep=",")
         data_frame = data_load.data_frame        
         print("Datos cargados desde {0} con {1} registros".format(input_file, data_frame.shape[0]))
-        data_load.create_selected('data/Descartados.csv','categoria', 4)
+        data_load.create_selected('data/Descartados_42.csv','categoria', 4)
         data_frame = data_load.selected
         print("Datos cargados finales {}".format(data_frame.shape[0]))
         #print(data_frame)
@@ -103,7 +116,7 @@ if __name__ == '__main__' :
         #print(df)
         print(optimus)
 
-        # Variante 1
+        # Variante 1, usa el número de cluster que arroja el análisis anterior
         model_kx = SegmentationModel(pca_work, 7)
         model_kx.view_graphic()
         df_summary = pd.DataFrame(model_kx.dict_summary).T
@@ -112,19 +125,20 @@ if __name__ == '__main__' :
         model_ky = SegmentationModel(pca_work, 7, name="KMeans-1", 
                         num_pca = pca_work.num_pca+1)
         model_ky.view_graphic()
-        df_summary = df_summary.append(pd.DataFrame(model_ky.dict_summary).T)
-        
+        #df_summary = df_summary.append(pd.DataFrame(model_ky.dict_summary).T)
+        df_summary = pd.concat([df_summary, pd.DataFrame(model_ky.dict_summary).T])
         # Variante 3 - Modifica en 2 el valor de componentes PCA
         model_kz = SegmentationModel(pca_work, 7, name="KMeans-2", num_pca = pca_work.num_pca+2)
         model_kz.view_graphic()
-        df_summary = df_summary.append(pd.DataFrame(model_kz.dict_summary).T)        
-
+        #df_summary = df_summary.append(pd.DataFrame(model_kz.dict_summary).T)  
+             
+        df_summary = pd.concat([df_summary, pd.DataFrame(model_kz.dict_summary).T])
         # Variante 4 - Mantiene configuración de PCA y modifica el valor de clusters
         model_kw = SegmentationModel(pca_work, 2, name="KMeans-3")
 
         model_kw.view_graphic()
-        df_summary = df_summary.append(pd.DataFrame(model_kw.dict_summary).T)        
-
+        #df_summary = df_summary.append(pd.DataFrame(model_kw.dict_summary).T)        
+        df_summary = pd.concat([df_summary, pd.DataFrame(model_kw.dict_summary).T])
         # Imprime las insercias de cada variante
         print(df_summary[['inertia']])    
 
