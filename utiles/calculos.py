@@ -4,6 +4,13 @@ from sklearn.cluster import KMeans
 
 import matplotlib.cm as cm
 import numpy as np
+import pandas as pd
+
+def generate_descarted(data : pd.DataFrame, out_file : str, porc : float = 0.1):
+    selected = data.query("categoria == 5")
+    total = round(selected.shape[0]*(1-porc))
+    selected.sample(total)['id'].to_csv('data/' + out_file, index=False)
+    return selected.shape[0], total, selected.sample(total)
 
 def calculate_grade(configuration, puntaje):
     """
