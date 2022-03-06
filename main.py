@@ -11,7 +11,7 @@ sys.path.append(str(pathlib.Path().absolute()))
 from utiles.configuration import ConfigurationFile
 from utiles.generate import Generate
 from utiles.data import Data
-from utiles.calculos import evaluate_with_silhoutte, display_variants, generate_descarted
+from utiles.calculos import evaluate_with_silhoutte, display_variants, generate_descarted, view_variants, view_inertia
 from modelo.search import SearchOptimusK
 from modelo.model import SegmentationModel
 from modelo.result import SegmentationResult
@@ -84,7 +84,7 @@ if __name__ == '__main__' :
         # Reducción de dimensionalidad
         pca_work = PCA_Work(x_scaled)
         # Gráfico de las varianzas
-        # print(pca_work.plotting_variances())
+        print(pca_work.plotting_variances())
         # Determina el valor de PCA
         """
         lst_num_features = range(2, configurationFile.items+1)
@@ -94,7 +94,11 @@ if __name__ == '__main__' :
                 print(pca_work.cluster_by_PCA(max_clusters = 10, kmeans_init = x_init))        
         """
         # Con lo anterior se fijan los valores de la reducción de dimensionalidad
-        pca_work.num_pca = 2
+        num_pca_ = int(input("Nro. principal PCA : "))
+        pca_work.num_pca = num_pca_
+
+        # Comienza a buscar el óptimo de K
+
         optimus = SearchOptimusK(pca_work, algorithm = 'auto')
         # Comprueba usando la curva de elbow
         """
@@ -102,12 +106,16 @@ if __name__ == '__main__' :
             print("Algoritmo {}".format(alg))
             optimus.get_cluster_elbow()
         """
-        optimus.elbow = 7
+        optimus.get_cluster_elbow()
+
+        # Observamdo el resultado anterior se debe elegir el valor según elbow
+        optimus_elbow = int(input("Optimo para elbow : "))
+        optimus.elbow = optimus_elbow
         # Comprueba usando silhoutte
         ideal_number, values, rc = optimus.get_cluster_silhoutte()
         print("Cluster ideal, usando índices silhouette con algoritmo {0} es {1}".format('random', ideal_number))
         optimus.graphic_view()
-        optimus.silhoutte = ideal_number        
+        #optimus.silhoutte = ideal_number        
         
         # Comprueba usando estadústico GAP
         #x_optimus = SearchOptimusK(pca_work, algorithm = 'random')
@@ -116,47 +124,73 @@ if __name__ == '__main__' :
         #print(df)
         print(optimus)
 
+        # Comparación de variantes, alternando el número de clusters
+        max_clusters = 10
+        result = display_variants(pca_work, max_clusters)      
+
+        # Muestra los coeficientes de silhoutte
+        view_variants(result, max_clusters)
+
+        # Solicitar el nro. de clusters oficial y variante
+        n_clusters = int(input("Nro. clusters oficial : "))
+        n_clusters_v = int(input("Nro. clusters alternativo : "))
+
+        # Comienza a crear las variantes
+        models = []
+        features_items = data_load.data_frame.columns[1:configurationFile.items]
         # Variante 1, usa el número de cluster que arroja el análisis anterior
-        model_kx = SegmentationModel(pca_work, 7)
+        model_kx = SegmentationModel(features_items, pca_work, n_clusters, name="KMeans-0")
+        # Muestra la correlación entre las 2 primeras características
         model_kx.view_graphic()
         df_summary = pd.DataFrame(model_kx.dict_summary).T
-        #print(df_summary)        
+        models.append(model_kx)
+
         # Variante 2 - Modifica el número de elementos de PCA
-        model_ky = SegmentationModel(pca_work, 7, name="KMeans-1", 
+        model_ky = SegmentationModel(features_items, pca_work, n_clusters, name="KMeans-1", 
                         num_pca = pca_work.num_pca+1)
+        # Muestra la correlación entre las 2 primeras características                        
         model_ky.view_graphic()
-        #df_summary = df_summary.append(pd.DataFrame(model_ky.dict_summary).T)
+        # Agrega resultado
         df_summary = pd.concat([df_summary, pd.DataFrame(model_ky.dict_summary).T])
+        models.append(model_ky)
+
         # Variante 3 - Modifica en 2 el valor de componentes PCA
-        model_kz = SegmentationModel(pca_work, 7, name="KMeans-2", num_pca = pca_work.num_pca+2)
+        model_kz = SegmentationModel(features_items, pca_work, n_clusters_v, name="KMeans-2")
+        # Muestra la correlación entre las 2 primeras características
         model_kz.view_graphic()
-        #df_summary = df_summary.append(pd.DataFrame(model_kz.dict_summary).T)  
-             
+        
+        # Agrega resultado     
         df_summary = pd.concat([df_summary, pd.DataFrame(model_kz.dict_summary).T])
+        models.append(model_kz)
+
         # Variante 4 - Mantiene configuración de PCA y modifica el valor de clusters
-        model_kw = SegmentationModel(pca_work, 2, name="KMeans-3")
-
+        model_kw = SegmentationModel(features_items, pca_work, n_clusters_v, name="KMeans-3", num_pca = pca_work.num_pca+1)
+        
+        # Muestra la correlación entre las 2 primeras características
         model_kw.view_graphic()
-        #df_summary = df_summary.append(pd.DataFrame(model_kw.dict_summary).T)        
+
+        # Agrega resultado
         df_summary = pd.concat([df_summary, pd.DataFrame(model_kw.dict_summary).T])
-        # Imprime las insercias de cada variante
+        models.append(model_kw)
+        # Imprime y grafica las insercias de cada variante
         print(df_summary[['inertia']])    
-
+        view_inertia(df_summary[['inertia']])
+        
         # Evaluación de los modelos usando el coeficiente de silhoutte
-        evaluate_with_silhoutte(pca_work, model_kx)
-        print("*"*50)
-        evaluate_with_silhoutte(pca_work, model_ky)
-        print("*"*50)
-        evaluate_with_silhoutte(pca_work, model_kz)
-        print("*"*50)
-        evaluate_with_silhoutte(pca_work, model_kw)  
+        for model in models:
+            print(model.model)
+            evaluate_with_silhoutte(pca_work, model)
+            print("*"*50)
 
-        # Comparación de variantes, alternando el número de clusters
-        display_variants(pca_work, 10, kmeans_init='random')      
+        # Selección del modelo
+        index_best = int(input("# modelo seleccionado : "))
+        best_model = models[index_best]
+        # Muestra el modelo seleccionado
+        print(df_summary.iloc[index_best])
 
         # Análisis de clusters
         # Se debe entregar el modelo que ha sido seleccionado
-        result = SegmentationResult(data_frame, model_kx.y_predict)
+        result = SegmentationResult(data_frame, best_model.y_predict)
         data_final = result.data_final        
 
         # Muestra cantidad de estudiantes por grupo
@@ -178,6 +212,9 @@ if __name__ == '__main__' :
         result.view_outliers('puntaje')
 
         result.view_outliers('nota')
+
+        # Muestra estudiantes de cada grupo
+        result.view_group_detail()
 
         # Guarda resultados
         """
