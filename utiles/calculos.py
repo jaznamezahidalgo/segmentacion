@@ -6,15 +6,17 @@ import matplotlib.cm as cm
 import numpy as np
 import pandas as pd
 
+from modelo.pca import PCA_Work
+
 def generate_descarted(data : pd.DataFrame, out_file : str, porc : float = 0.1):
     selected = data.query("categoria == 5")
     total = round(selected.shape[0]*(1-porc))
     selected.sample(total)['id'].to_csv('data/' + out_file, index=False)
     return selected.shape[0], total, selected.sample(total)
 
-def calculate_grade(configuration, puntaje):
-    """
-    Calcula la nota de acuerdo a la fórmula definida
+def calculate_grade(configuration, puntaje : int):
+    """Calcula la nota de acuerdo a la fórmula definida
+    configuration : objeto de la clase ConfigurationFile con los parámetros de configuración
     """
     PUNTAJE_CORTE = configuration.puntaje_corte
     NOTA_MAXIMA = configuration.nota_maxima
@@ -28,9 +30,9 @@ def calculate_grade(configuration, puntaje):
         nota = round((NOTA_APROBACION - NOTA_MINIMA)*(puntaje/PUNTAJE_CORTE)+NOTA_MINIMA,1)
     return nota
 
-def calculate_category(nota):
-    """
-    Calcula la categoría de acuerdo a lo definido en los requerimientos
+def calculate_category(nota : float):
+    """Calcula la categoría de acuerdo a lo definido en los requerimientos
+    nota : calificación obtenida
     """
     if nota >= 6.0: categoria = 1
     elif nota >= 5: categoria = 2
@@ -47,9 +49,11 @@ def evaluate_with_silhoutte(w_pca, model):
     score = silhouette_score(w_pca.PCA_components.iloc[:,:model.num_pca], model.y_predict)
     print(f"Silhouette Coefficient (metric -> euclidian): {score:.3f} with{model.n_clusters:2d} clusters")
 
-def display_variants(w_pca, n_max_clusters, max_iter = 1000, kmeans_init = None):
+def display_variants(w_pca : PCA_Work, n_max_clusters : int, max_iter : int = 1000, kmeans_init = None):    
   range_n_clusters = range(2, n_max_clusters+1)
-  kmeans_init = 'k-means++' if kmeans_init is None else kmeans_init
+  kmeans_init = 'k-means++' if kmeans_init == None else kmeans_init
+
+  lst_average = []
   for n_clusters in range_n_clusters:
     # Create a subplot with 1 row and 2 columns
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -80,6 +84,8 @@ def display_variants(w_pca, n_max_clusters, max_iter = 1000, kmeans_init = None)
         silhouette_avg,
     )
 
+    # Add average score
+    lst_average.append(silhouette_avg)
     # Compute the silhouette scores for each sample
     sample_silhouette_values = silhouette_samples(w_pca.PCA_components.iloc[:,:w_pca.num_pca], cluster_labels, 
                                                   metric="sqeuclidean")
@@ -156,3 +162,33 @@ def display_variants(w_pca, n_max_clusters, max_iter = 1000, kmeans_init = None)
     )
 
   plt.show()
+
+  return lst_average
+
+def view_variants(lst_average : np.array, max_cluster : int):
+    """ Muestra los coeficientes de silhoutte variando el número de clusters
+
+    lst_average : índices calculados
+    max_cluster : número máximo de cluster tratado
+    """
+    plt.figure(figsize = (8,8))
+    plt.bar(np.array(range(2, max_cluster+1)), lst_average)
+    # Setea etiqueta y título del gráfico
+    plt.xlabel("Número clusters", fontsize=14)
+    plt.ylabel("Coeficiente silhoutte", fontsize=14)
+    plt.title("Nro. clusters versus coeficiente silhoutte", fontsize=18, fontweight="bold")
+    # Muestra el gráfico
+    plt.show()
+
+def view_inertia(lst_inertia : pd.Series):
+    plt.figure(figsize = (8,8))
+    x_axe = np.array(lst_inertia.index)
+    y_values = np.array(lst_inertia.values)
+    y_axe = np.reshape(y_values, len(x_axe))
+    plt.bar(x_axe, y_axe)
+    # Setea etiqueta y título del gráfico
+    plt.xlabel("Modelos", fontsize=14)
+    plt.ylabel("Inercia", fontsize=14)
+    plt.title("Inercias de los modelos", fontsize=18, fontweight="bold")
+    # Muestra el gráfico
+    plt.show()
