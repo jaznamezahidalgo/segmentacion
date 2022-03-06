@@ -1,3 +1,4 @@
+from audioop import reverse
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 from sklearn.metrics import silhouette_score
@@ -16,6 +17,7 @@ class SearchOptimusK(object):
       self.kmeans_init = "k-means++" if kmeans_init is None else kmeans_init      
       self.elbow = 2
       self.silhoutte = 2
+      self.second_silhoutte = 2
       self.GAP = 2
 
   def __getattr__(self, name: str):
@@ -66,12 +68,13 @@ class SearchOptimusK(object):
       cluster_labels = modelo_kmeans.fit_predict(self.PCA_components.iloc[:,:self.num_pca])
       silhouette_avg = silhouette_score(self.PCA_components.iloc[:,:self.num_pca], cluster_labels, metric="sqeuclidean")
       self.valores_medios_silhouette.append(silhouette_avg)
-    self.ideal_number = list(range(2,self.max_clusters+1))[np.argmax(self.valores_medios_silhouette)]
+    self.silhoutte = list(range(2,self.max_clusters+1))[np.argmax(self.valores_medios_silhouette)]
+    self.second_silhoutte = list(range(2,self.max_clusters+1))[self.valores_medios_silhouette.index(sorted(self.valores_medios_silhouette, reverse = True)[1])]
     #self_values_medios_silhoutte = self.valores_medios_silhouette  
-    return self.ideal_number, self.valores_medios_silhouette, self.range_n_clusters    
+    return self.silhoutte, self.valores_medios_silhouette, self.range_n_clusters    
 
   def graphic_view(self):  
-    fig, ax = plt.subplots(1, 1, figsize=(6, 3.84))
+    fig, ax = plt.subplots(1, 1, figsize=(8, 3.84))
     ax.plot(self.range_n_clusters, self.valores_medios_silhouette, marker='o')
     ax.set_title("Evolución de media de los índices silhouette con {}".format(self.algorithm), fontsize=18, fontweight="bold")
     ax.set_xlabel('Número clusters', fontsize=14)
@@ -127,5 +130,5 @@ class SearchOptimusK(object):
     plt.show();
 
   def __str__(self) -> str:
-    return "elbow : {0}; silhoutte : {1}; GAP : {2}\n NUM_COMPONENTES : {3}".format(self.elbow, 
-    self.silhoutte, self.GAP, self.num_pca)
+    return "elbow : {0}; silhoutte : {1}; silhoutte : {2}; GAP : {3}\nNUM_COMPONENTES : {4}".format(self.elbow, 
+    self.silhoutte, self.second_silhoutte, self.GAP, self.num_pca)

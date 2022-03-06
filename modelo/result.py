@@ -1,5 +1,6 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 class SegmentationResult(object):
   def __init__(self, data, clusters):
@@ -24,19 +25,25 @@ class SegmentationResult(object):
   def get_total_by_cluster(self):
     return self.data_final.groupby('grupo')[['total']].sum()  
 
-  def get_metrics_by_cluster(self, columns, metrics):
+  def get_metrics_by_cluster(self, columns : np.array, metrics):
     return self.data_final.groupby('grupo')[columns].aggregate(metrics)
 
-  def get_summary_cluster(self, cluster, selected):
+  def get_summary_cluster(self, cluster : int, selected : str):
     return self.data_final[self.data_final.grupo == cluster][selected]   
 
-  def view_outliers(self, column):
+  def view_outliers(self, column : str):
     ax = sns.boxplot(x="grupo", y=column, data=self.data_final)
     ax.set_xlabel("Grupo", fontsize=16)
     ax.set_ylabel(column.capitalize(), fontsize=16)
     plt.ylim(min(self.data_final[column])-1, max(self.data_final[column])+1)
     ax.set_title("Dispersión de " + column + " por grupo", fontsize=24, fontweight = "bold")
     plt.show();
+  
+  def view_group_detail(self):
+    for n_group in self.data_final.grupo.unique():
+      print("Grupo # {}".format(n_group))
+      print(self.data_final[self.data_final.grupo == n_group][['id','nota']])
+      print("-"*50)
 
   def to_csv(self, unique_file = False, output = 'result.csv'):
     if unique_file:
