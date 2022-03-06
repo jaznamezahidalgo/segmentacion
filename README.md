@@ -12,7 +12,7 @@
   + DP - Logro del aspecto entre un 30% y un 59%
   + DC - Logro del aspecto inferior al 30%
   
-  Cada uno de estos valores se escala de 1 a 5 
+  Cada uno de estos valores se escala de 1 (DC) a 5 (ED) 
 
 4. El archivo CSV de contar con las columnas OBLIGATORIAS:
 
